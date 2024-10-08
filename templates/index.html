@@ -1,12 +1,37 @@
-<h1>Ration Distribution System</h1>
-<form action="/upload" method="post" enctype="multipart/form-data">
-    <label>Upload Excel File:</label>
-    <input type="file" name="file">
-    <input type="submit" value="Upload">
-</form>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <title>Ration Manager</title>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Ration Manager</h1>
+        <div class="text-center mb-4">
+            <p class="lead">Welcome to the Ration Manager System. Please choose an action:</p>
+        </div>
+        
+        <div class="text-center">
+            <a href="{{ url_for('upload_excel') }}" class="btn btn-primary btn-lg mx-2">
+                <i class="fas fa-upload"></i> Upload Excel
+            </a>
+            <a href="{{ url_for('upload_nic') }}" class="btn btn-secondary btn-lg mx-2">
+                <i class="fas fa-id-card"></i> Upload NIC
+            </a>
+            <a href="{{ url_for('manual_input') }}" class="btn btn-success btn-lg mx-2">
+                <i class="fas fa-plus"></i> Manual Input
+            </a>
+            <a href="{{ url_for('display_records') }}" class="btn btn-info btn-lg mx-2">
+                <i class="fas fa-eye"></i> View Records
+            </a>
+        </div>
+    </div>
 
-<form action="/upload_cnic" method="post" enctype="multipart/form-data">
-    <label>Upload CNIC Image:</label>
-    <input type="file" name="file">
-    <input type="submit" value="Upload CNIC">
-</form>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
