@@ -1,7 +1,6 @@
 import os
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user
-
 import pandas as pd
 from PIL import Image
 import pytesseract
@@ -48,11 +47,17 @@ def logout():
     return redirect(url_for('login'))
 
 # Display page
-@app.route('/display')
+@app.route('/display', methods=['GET', 'POST'])
 @login_required
 def display_records():
     global all_records
-    return render_template('display_records.html', records=all_records)
+    filter_value = request.form.get('filter_value')
+    filtered_records = all_records
+
+    if filter_value:
+        filtered_records = [record for record in all_records if record['Name'] == filter_value or record['Father Name'] == filter_value or record['Address'] == filter_value]
+
+    return render_template('display_records.html', records=filtered_records)
 
 # Folder to save uploads
 UPLOAD_FOLDER = 'uploads'
@@ -85,6 +90,11 @@ def upload_excel():
         # Read the Excel file
         df = pd.read_excel(file_path)
         records = df.to_dict(orient='records')
+
+        # Add is_active key to each record
+        for record in records:
+            record['is_active'] = True  # Set as active by default
+
         all_records.extend(records)
 
         return redirect(url_for('display_records'))
@@ -109,7 +119,7 @@ def upload_nic():
         nic_data = pytesseract.image_to_string(Image.open(nic_file_path))
 
         # Process NIC data (simplified for example)
-        records = [{'Name': 'Extracted Name', 'Father Name': 'Extracted Father Name', 'Address': 'Extracted Address', 'Contact Number': 'Extracted Contact Number'}]
+        records = [{'Name': 'Extracted Name', 'Father Name': 'Extracted Father Name', 'Address': 'Extracted Address', 'Contact Number': 'Extracted Contact Number', 'is_active': True}]  # Set as active by default
         all_records.extend(records)
 
         return redirect(url_for('display_records'))
@@ -127,7 +137,7 @@ def manual_input():
         contact_number = request.form['contact_number']
 
         # Store manual input data
-        records = [{'Name': name, 'Father Name': father_name, 'Address': address, 'Contact Number': contact_number}]
+        records = [{'Name': name, 'Father Name': father_name, 'Address': address, 'Contact Number': contact_number, 'is_active': True}]  # Set as active by default
         all_records.extend(records)
 
         return redirect(url_for('display_records'))
@@ -148,6 +158,14 @@ def update_record(record_id):
 
     record = all_records[record_id]
     return render_template('update.html', record=record, record_id=record_id)
+
+# Toggle active status route
+@app.route('/toggle_status/<int:record_id>')
+@login_required
+def toggle_status(record_id):
+    global all_records
+    all_records[record_id]['is_active'] = not all_records[record_id]['is_active']  # Toggle the status
+    return redirect(url_for('display_records'))
 
 # Delete route
 @app.route('/delete/<int:record_id>')
