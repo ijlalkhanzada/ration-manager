@@ -3,91 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Records Display</title>
+    <!-- Bootstrap CSS for better UI -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <title>Display Records</title>
-    <style>
-        .action-btn {
-            margin-right: 5px;
-        }
-    </style>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 </head>
 <body>
     <div class="container mt-5">
-        <h1 class="mb-4 text-center">Records</h1>
-
+        <h2 class="text-center mb-4">Ration Records</h2>
+        
         <!-- Filter Form -->
-        <form method="POST" class="mb-4">
-            <input type="text" name="filter_value" placeholder="Filter by Name, Father Name, or Address" class="form-control mb-2">
+        <form method="GET" action="{{ url_for('display_records') }}" class="form-inline mb-4">
+            <input type="text" name="filter" class="form-control mr-2" placeholder="Filter by Name or City">
             <button type="submit" class="btn btn-primary">Filter</button>
         </form>
-
-        <div class="mb-4">
-            <a href="{{ url_for('manual_input') }}" class="btn btn-primary">
-                <i class="fas fa-plus"></i> Add Manual Input
-            </a>
-            <a href="{{ url_for('upload_excel') }}" class="btn btn-secondary">
-                <i class="fas fa-file-upload"></i> Upload Excel
-            </a>
-            <a href="{{ url_for('upload_nic') }}" class="btn btn-secondary">
-                <i class="fas fa-id-card"></i> Upload NIC
-            </a>
-            <a href="{{ url_for('delete_duplicates') }}" class="btn btn-danger">
-                <i class="fas fa-trash-alt"></i> Delete Duplicates
-            </a>
-            <a href="{{ url_for('logout') }}" class="btn btn-danger">
-                <i class="fas fa-sign-out-alt"></i> Logout
-            </a>
+        <div class="container mt-3">
+            <!-- Button group at the top -->
+            <div class="d-flex justify-content-start mb-3">
+                <div class="btn-group">
+                    <a href="{{ url_for('upload_excel') }}" class="btn btn-primary">Upload Excel</a>
+                    <a href="{{ url_for('upload_nic') }}" class="btn btn-secondary">Upload NIC</a>
+                    <a href="{{ url_for('manual_input') }}" class="btn btn-info">Manual Input</a>
+                    <a href="{{ url_for('delete_duplicates') }}" class="btn btn-warning">Delete Duplicates</a>
+                </div>
+                <a href="{{ url_for('logout') }}" class="btn btn-danger ms-3">Logout</a>
+            </div>
+        
+            <!-- Table for displaying records -->
+            <table class="table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Name</th>
+                        <th>Father Name</th>
+                        <th>Address</th>
+                        <th>Contact Number</th>
+                        <th>Status</th>
+                        <th>Actions</th> <!-- For Activate/Deactivate -->
+                        <th>Actions</th> <!-- For Update/Delete -->
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in records %}
+                    <tr {% if not record.is_active %}class="table-secondary text-muted"{% endif %}>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ record['Name'] }}</td>
+                        <td>{{ record['Father Name'] }}</td>
+                        <td>{{ record['Address'] }}</td>
+                        <td>{{ record['Contact Number'] }}</td>
+                        <td>
+                            {% if record.is_active %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-danger">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex justify-content-around">
+                                {% if record.is_active %}
+                                    <a href="{{ url_for('toggle_status', record_id=loop.index0) }}" class="btn btn-sm btn-danger">Deactivate</a>
+                                {% else %}
+                                    <a href="{{ url_for('toggle_status', record_id=loop.index0) }}" class="btn btn-sm btn-success">Activate</a>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="d-flex justify-content-around">
+                                <a href="{{ url_for('update_record', record_id=loop.index0) }}" class="btn btn-sm btn-warning {% if not record.is_active %}disabled{% endif %}">Update</a>
+                                <a href="{{ url_for('delete_record', record_id=loop.index0) }}" class="btn btn-sm btn-danger {% if not record.is_active %}disabled{% endif %}">Delete</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
+        
+        
 
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Father Name</th>
-                    <th>Address</th>
-                    <th>Contact Number</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for record in records %}
-                <tr>
-                    <td>{{ record['Name'] }}</td>
-                    <td>{{ record['Father Name'] }}</td>
-                    <td>{{ record['Address'] }}</td>
-                    <td>{{ record['Contact Number'] }}</td>
-                    <td>
-                        <span class="badge {{ 'badge-success' if record.is_active else 'badge-danger' }}">
-                            {{ 'Active' if record.is_active else 'Inactive' }}
-                        </span>
-                    </td>
-                    <td>
-                        {% if record.is_active %}
-                            <a href="{{ url_for('toggle_status', record_id=loop.index0) }}" class="btn btn-danger btn-sm action-btn" title="Deactivate">
-                                <i class="fas fa-ban"></i> Deactivate
-                            </a>
-                        {% else %}
-                            <a href="{{ url_for('toggle_status', record_id=loop.index0) }}" class="btn btn-success btn-sm action-btn" title="Activate">
-                                <i class="fas fa-check"></i> Activate
-                            </a>
-                        {% endif %}
-                        <a href="{{ url_for('update_record', record_id=loop.index0) }}" class="btn btn-warning btn-sm action-btn" title="Update">
-                            <i class="fas fa-edit"></i> Update
-                        </a>
-                        <a href="{{ url_for('delete_record', record_id=loop.index0) }}" class="btn btn-danger btn-sm action-btn" title="Delete">
-                            <i class="fas fa-trash-alt"></i> Delete
-                        </a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
+    <!-- Bootstrap JS and dependencies -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.0.11/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>
