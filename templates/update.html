@@ -28,41 +28,51 @@
             </div>
 
             <!-- Display current images if available -->
-            <div class="form-group">
-                <label>Current Member Image:</label><br>
-                {% if record['Member Image'] %}
-                    <img src="{{ url_for('uploaded_file', filename=record['Member Image']) }}" alt="Current Member Image" style="max-width: 150px; margin-bottom: 10px;">
-                {% else %}
-                    <p>No Member Image Available</p>
-                {% endif %}
-            </div>
+            <div class="container mt-4">
+                <h2>Update Member Record</h2>
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="member_image">Upload Member Image:</label>
+                        <div class="d-flex align-items-center">
+                            {% if record['Member Image'] %}
+                                <img src="{{ url_for('uploaded_file', filename=record['Member Image']) }}" alt="Current Member Image" class="img-thumbnail me-2" width="100">
+                            {% else %}
+                                <p class="text-muted me-2">No Member Image Available</p>
+                            {% endif %}
+                            <input type="file" name="member_image" accept="image/*" class="form-control-file">
+                        </div>
+                    </div>
+            
+                    <div class="form-group">
+                        <label for="nic_front">Upload NIC Front:</label>
+                        <div class="d-flex align-items-center">
+                            {% if record['NIC Front'] %}
+                                <img src="{{ url_for('uploaded_file', filename=record['NIC Front']) }}" alt="NIC Front Image" class="img-thumbnail me-2" width="100">
+                            {% else %}
+                                <p class="text-muted me-2">No NIC Front Available</p>
+                            {% endif %}
+                            <input type="file" name="nic_front" accept="image/*" class="form-control-file">
+                        </div>
+                    </div>
+            
+                    <div class="form-group">
+                        <label for="nic_back">Upload NIC Back:</label>
+                        <div class="d-flex align-items-center">
+                            {% if record['NIC Back'] %}
+                                <img src="{{ url_for('uploaded_file', filename=record['NIC Back']) }}" alt="NIC Back" class="img-thumbnail me-2" width="100">
+                            {% else %}
+                                <p class="text-muted me-2">No NIC Back Available</p>
+                            {% endif %}
+                            <input type="file" name="nic_back" accept="image/*" class="form-control-file">
+                        </div>
+                    </div>
+            
+                    <button type="submit" class="btn btn-primary mt-3">Update Record</button>
+                </form>
+                <a href="{{ url_for('display_records') }}" class="btn btn-secondary mt-3">Back to Records</a>
 
-            <div class="form-group">
-                <label for="nic_front">Upload NIC Front:</label>
-                {% if record['NIC Front'] %}
-                <img src="{{ url_for('uploaded_file', filename=record['NIC Front']) }}" alt="NIC Front" width="100">
-                {% else %}
-                    <p>No NIC Front Available</p>
-                {% endif %}
-                <input type="file" name="nic_front" accept="image/*">
-            </div>
-            <div class="form-group">
-                <label for="nic_back">Upload NIC Back:</label>
-                {% if record['NIC Back'] %}
-                <img src="{{ url_for('uploaded_file', filename=record['NIC Back']) }}" alt="NIC Back" width="100">
-                {% else %}
-                    <p>No NIC Back Available</p>
-                {% endif %}
-                <input type="file" name="nic_back" accept="image/*">
-            </div>
-            <div class="form-group">
-                <label for="member_image">Upload Member Image:</label>
-                <input type="file" name="member_image" accept="image/*">
-            </div>
-
-            <button type="submit" class="btn btn-primary">Update Record</button>
+            </div>            
         </form>
-        <a href="{{ url_for('display_records') }}" class="btn btn-secondary mt-3">Back to Records</a>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>

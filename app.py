@@ -209,7 +209,10 @@ def allowed_file(filename):
 # Serve uploaded files
 @app.route('/uploads/<path:filename>')
 def uploaded_file(filename):
+    # Use forward slashes in URLs
+    filename = filename.replace("\\", "/")
     return send_from_directory(UPLOAD_FOLDER, filename)
+
 
 # Update route
 # Update route
@@ -218,6 +221,12 @@ def uploaded_file(filename):
 @login_required
 def update_record(record_id):
     global all_records
+
+    # Ensure that the record_id is within the valid range
+    if record_id >= len(all_records) or record_id < 0:
+        flash('Record not found. Invalid record ID.')
+        return redirect(url_for('display_records'))  # Redirect to display page if invalid ID
+    
     if request.method == 'POST':
         # Update details
         all_records[record_id]['Name'] = request.form['name']
@@ -227,6 +236,7 @@ def update_record(record_id):
         
         # Member folder path
         member_folder = os.path.join(UPLOAD_FOLDER, all_records[record_id]['Name'].replace(" ", "_"))
+        os.makedirs(member_folder, exist_ok=True)  # Ensure the folder exists
 
         # Handle file uploads if they exist
         member_image = request.files.get('member_image')
@@ -236,20 +246,23 @@ def update_record(record_id):
         if member_image and allowed_file(member_image.filename):
             member_filename = secure_filename(member_image.filename)
             member_image.save(os.path.join(member_folder, member_filename))
-            all_records[record_id]['Member Image'] = os.path.join(all_records[record_id]['Name'].replace(" ", "_"), member_filename)
+            all_records[record_id]['Member Image'] = os.path.join(all_records[record_id]['Name'].replace(" ", "_"), member_filename).replace("\\", "/")
 
+        # Update routes mein NIC Front aur Back ka path forward slashes mein convert karen
         if nic_front and allowed_file(nic_front.filename):
-            front_filename = secure_filename(nic_front.filename)
-            nic_front.save(os.path.join(member_folder, front_filename))
-            all_records[record_id]['NIC Front'] = os.path.join(all_records[record_id]['Name'].replace(" ", "_"), front_filename)
+         front_filename = secure_filename(nic_front.filename)
+         nic_front.save(os.path.join(member_folder, front_filename))
+         all_records[record_id]['NIC Front'] = os.path.join(all_records[record_id]['Name'].replace(" ", "_"), front_filename).replace("\\", "/")
 
         if nic_back and allowed_file(nic_back.filename):
             back_filename = secure_filename(nic_back.filename)
             nic_back.save(os.path.join(member_folder, back_filename))
-            all_records[record_id]['NIC Back'] = os.path.join(all_records[record_id]['Name'].replace(" ", "_"), back_filename)
+            all_records[record_id]['NIC Back'] = os.path.join(all_records[record_id]['Name'].replace(" ", "_"), back_filename).replace("\\", "/")
 
+        flash('Record updated successfully!')
         return redirect(url_for('display_records'))
 
+    # If GET request, display the form with the current record details
     record = all_records[record_id]
     return render_template('update.html', record=record, record_id=record_id)
 
@@ -257,7 +270,7 @@ def update_record(record_id):
 @app.route('/duplicates')
 def show_duplicates():
     # یہاں آپ ڈپلیکیٹ ریکارڈز کی منطق لکھیں
-    duplicates = get_duplicate_records()  # اپنی منطق کے مطابق اس فنکشن کو لکھیں
+    duplicates = get_duplicate_records()   # اپنی منطق کے مطابق اس فنکشن کو لکھیں
     return render_template('duplicates_display.html', duplicates=duplicates)
 
 # Toggle active status route
