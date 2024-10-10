@@ -52,13 +52,21 @@ def logout():
 @login_required
 def display_records():
     global all_records
-    filter_value = request.form.get('filter_value')
+    filter_value = request.args.get('filter', '').strip().lower()  # Use .args to get query params
     filtered_records = all_records
 
     if filter_value:
-        filtered_records = [record for record in all_records if record['Name'] == filter_value or record['Father Name'] == filter_value or record['Address'] == filter_value]
+        filtered_records = [
+            record for record in all_records if (
+                filter_value in str(record.get('Name', '')).lower() or 
+                filter_value in str(record.get('Father Name', '')).lower() or 
+                filter_value in str(record.get('Address', '')).lower() or 
+                filter_value in str(record.get('Contact Number', '')).lower()
+            )
+        ]
 
     return render_template('display_records.html', records=filtered_records)
+
 
 # Folder to save uploads
 UPLOAD_FOLDER = 'uploads'
