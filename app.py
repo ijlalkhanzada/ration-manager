@@ -1,9 +1,10 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user
 import pandas as pd
 from PIL import Image
 import pytesseract
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -101,6 +102,13 @@ def upload_excel():
 
     return render_template('upload_excel.html')  # Render the upload form
 
+def extract_field_from_nic(nic_data, field_name):
+    # Simplified extraction logic (You need to define how your data is structured)
+    for line in nic_data.split('\n'):
+        if field_name.lower() in line.lower():
+            return line.split(":")[-1].strip()  # Assuming the format is 'Name: value'
+    return "Not Found"
+
 # NIC upload route
 @app.route('/upload_nic', methods=['GET', 'POST'])
 def upload_nic():
@@ -116,10 +124,26 @@ def upload_nic():
         # Save and process the NIC image
         nic_file_path = os.path.join(UPLOAD_FOLDER, nic_file.filename)
         nic_file.save(nic_file_path)
+
+        # Extract text from the NIC image using Tesseract
         nic_data = pytesseract.image_to_string(Image.open(nic_file_path))
 
-        # Process NIC data (simplified for example)
-        records = [{'Name': 'Extracted Name', 'Father Name': 'Extracted Father Name', 'Address': 'Extracted Address', 'Contact Number': 'Extracted Contact Number', 'is_active': True}]  # Set as active by default
+        # Process NIC data and extract specific fields (Name, Father Name, etc.)
+        name = extract_field_from_nic(nic_data, 'Name')
+        father_name = extract_field_from_nic(nic_data, 'Father Name')
+        address = extract_field_from_nic(nic_data, 'Address')
+        contact_number = extract_field_from_nic(nic_data, 'Contact Number')
+
+        # Create a record dynamically from extracted fields
+        records = [{
+            'Name': name,
+            'Father Name': father_name,
+            'Address': address,
+            'Contact Number': contact_number,
+            'is_active': True  # Set as active by default
+        }]
+
+        # Add to the global list of records
         all_records.extend(records)
 
         return redirect(url_for('display_records'))
@@ -136,28 +160,105 @@ def manual_input():
         address = request.form['address']
         contact_number = request.form['contact_number']
 
+        # Create a folder for the member
+        member_folder = os.path.join(UPLOAD_FOLDER, name.replace(" ", "_"))
+        os.makedirs(member_folder, exist_ok=True)
+
+        # Handle file uploads for NIC Front, NIC Back, and Member Image
+        member_image = request.files.get('member_image')
+        nic_front = request.files.get('nic_front')
+        nic_back = request.files.get('nic_back')
+
         # Store manual input data
-        records = [{'Name': name, 'Father Name': father_name, 'Address': address, 'Contact Number': contact_number, 'is_active': True}]  # Set as active by default
-        all_records.extend(records)
+        record = {
+            'Name': name,
+            'Father Name': father_name,
+            'Address': address,
+            'Contact Number': contact_number,
+            'is_active': True  # Set as active by default
+        }
+# Use os.path.join to ensure correct path formation
+        member_folder = os.path.join(UPLOAD_FOLDER, name.replace(" ", "_"))
+# Save the member image
+        if member_image and allowed_file(member_image.filename):
+            member_filename = secure_filename(member_image.filename)
+            member_image.save(os.path.join(member_folder, member_filename))
+            record['Member Image'] = os.path.join(name.replace(" ", "_"), member_filename).replace("\\", "/")  # Convert any backslashes to forward slashes
+
+        if nic_front and allowed_file(nic_front.filename):
+            front_filename = secure_filename(nic_front.filename)
+            nic_front.save(os.path.join(member_folder, front_filename))
+            record['NIC Front'] = os.path.join(name.replace(" ", "_"), front_filename)
+
+        if nic_back and allowed_file(nic_back.filename):
+            back_filename = secure_filename(nic_back.filename)
+            nic_back.save(os.path.join(member_folder, back_filename))
+            record['NIC Back'] = os.path.join(name.replace(" ", "_"), back_filename)
+
+        all_records.append(record)
 
         return redirect(url_for('display_records'))
 
     return render_template('manual_input.html')  # Render the manual input form
 
+# Allowed file formats
+def allowed_file(filename):
+    allowed_extensions = {'png', 'jpg', 'jpeg', 'gif'}
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
+
+# Serve uploaded files
+@app.route('/uploads/<path:filename>')
+def uploaded_file(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename)
+
+# Update route
+# Update route
 # Update route
 @app.route('/update/<int:record_id>', methods=['GET', 'POST'])
 @login_required
 def update_record(record_id):
     global all_records
     if request.method == 'POST':
+        # Update details
         all_records[record_id]['Name'] = request.form['name']
         all_records[record_id]['Father Name'] = request.form['father_name']
         all_records[record_id]['Address'] = request.form['address']
         all_records[record_id]['Contact Number'] = request.form['contact_number']
+        
+        # Member folder path
+        member_folder = os.path.join(UPLOAD_FOLDER, all_records[record_id]['Name'].replace(" ", "_"))
+
+        # Handle file uploads if they exist
+        member_image = request.files.get('member_image')
+        nic_front = request.files.get('nic_front')
+        nic_back = request.files.get('nic_back')
+
+        if member_image and allowed_file(member_image.filename):
+            member_filename = secure_filename(member_image.filename)
+            member_image.save(os.path.join(member_folder, member_filename))
+            all_records[record_id]['Member Image'] = os.path.join(all_records[record_id]['Name'].replace(" ", "_"), member_filename)
+
+        if nic_front and allowed_file(nic_front.filename):
+            front_filename = secure_filename(nic_front.filename)
+            nic_front.save(os.path.join(member_folder, front_filename))
+            all_records[record_id]['NIC Front'] = os.path.join(all_records[record_id]['Name'].replace(" ", "_"), front_filename)
+
+        if nic_back and allowed_file(nic_back.filename):
+            back_filename = secure_filename(nic_back.filename)
+            nic_back.save(os.path.join(member_folder, back_filename))
+            all_records[record_id]['NIC Back'] = os.path.join(all_records[record_id]['Name'].replace(" ", "_"), back_filename)
+
         return redirect(url_for('display_records'))
 
     record = all_records[record_id]
     return render_template('update.html', record=record, record_id=record_id)
+
+
+@app.route('/duplicates')
+def show_duplicates():
+    # یہاں آپ ڈپلیکیٹ ریکارڈز کی منطق لکھیں
+    duplicates = get_duplicate_records()  # اپنی منطق کے مطابق اس فنکشن کو لکھیں
+    return render_template('duplicates_display.html', duplicates=duplicates)
 
 # Toggle active status route
 @app.route('/toggle_status/<int:record_id>')

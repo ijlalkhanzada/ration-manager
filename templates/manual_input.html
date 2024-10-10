@@ -9,7 +9,7 @@
 <body>
     <div class="container mt-5">
         <h2>Manual Input</h2>
-        <form action="{{ url_for('manual_input') }}" method="post">
+        <form action="{{ url_for('manual_input') }}" method="post" enctype="multipart/form-data">
             <div class="form-group">
                 <label for="name">Name:</label>
                 <input type="text" class="form-control" name="name" required>
@@ -26,8 +26,21 @@
                 <label for="contact_number">Contact Number:</label>
                 <input type="text" class="form-control" name="contact_number" required>
             </div>
+            <div class="form-group">
+                <label for="member_image">Upload Member Image:</label>
+                <input type="file" class="form-control-file" name="member_image" accept="image/*" required>
+            </div>
+            <div class="form-group">
+                <label for="nic_front">Upload NIC Front:</label>
+                <input type="file" class="form-control-file" name="nic_front" accept="image/*" required>
+            </div>
+            <div class="form-group">
+                <label for="nic_back">Upload NIC Back:</label>
+                <input type="file" class="form-control-file" name="nic_back" accept="image/*" required>
+            </div>
             <button type="submit" class="btn btn-primary">Submit</button>
         </form>
+        
         <a href="{{ url_for('index') }}" class="btn btn-secondary mt-3">Back to Home</a>
     </div>
 </body>

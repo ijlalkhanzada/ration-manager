@@ -18,6 +18,7 @@
             <input type="text" name="filter" class="form-control mr-2" placeholder="Filter by Name or City">
             <button type="submit" class="btn btn-primary">Filter</button>
         </form>
+        
         <div class="container mt-3">
             <!-- Button group at the top -->
             <div class="d-flex justify-content-start mb-3">
@@ -35,6 +36,7 @@
                 <thead>
                     <tr>
                         <th>#</th>
+                        <th>Member Image</th> <!-- New column for Member Image -->
                         <th>Name</th>
                         <th>Father Name</th>
                         <th>Address</th>
@@ -48,6 +50,13 @@
                     {% for record in records %}
                     <tr {% if not record.is_active %}class="table-secondary text-muted"{% endif %}>
                         <td>{{ loop.index }}</td>
+                        <td>
+                            {% if record['Member Image'] %}
+                            <img src="{{ url_for('uploaded_file', filename=record['Member Image']) }}" alt="Member Image" width="100" height="100">
+                            {% else %}
+                                <span>No Image</span>
+                            {% endif %}
+                        </td>
                         <td>{{ record['Name'] }}</td>
                         <td>{{ record['Father Name'] }}</td>
                         <td>{{ record['Address'] }}</td>
@@ -80,8 +89,6 @@
             </table>
         </div>
         
-        
-
     <!-- Bootstrap JS and dependencies -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>

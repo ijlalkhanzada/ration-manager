@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ur">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duplicate Records</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-4">
+        <h1>ڈپلیکیٹ ریکارڈز</h1>
+        
+        <div class="mb-3">
+            <label for="filter" class="form-label">فلٹر کریں:</label>
+            <input type="text" id="filter" class="form-control" placeholder="نام یا پتہ درج کریں">
+            <button id="filterButton" class="btn btn-primary mt-2">فلٹر کریں</button>
+        </div>
+
+        <h3>ڈپلیکیٹ ریکارڈز کی تعداد: <span id="duplicateCount"></span></h3>
+        
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>نام</th>
+                    <th>پتہ</th>
+                    <th>کارروائی</th>
+                </tr>
+            </thead>
+            <tbody id="duplicateTableBody">
+                <!-- Duplicate records will be inserted here -->
+            </tbody>
+        </table>
+        
+        <a href="{{ url_for('home') }}" class="btn btn-secondary mt-3">واپس جائیں</a>
+    </div>
+
+    <script>
+        // جاوا اسکرپٹ کوڈ جو ڈپلیکیٹ ریکارڈز کو دکھانے کے لیے استعمال ہوگا
+    </script>
+</body>
+</html>
