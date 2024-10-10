@@ -117,6 +117,7 @@ def extract_field_from_nic(nic_data, field_name):
             return line.split(":")[-1].strip()  # Assuming the format is 'Name: value'
     return "Not Found"
 
+
 # NIC upload route
 @app.route('/upload_nic', methods=['GET', 'POST'])
 def upload_nic():
@@ -157,6 +158,7 @@ def upload_nic():
         return redirect(url_for('display_records'))
 
     return render_template('upload_nic.html')  # Render the upload form
+
 
 # Manual input route
 @app.route('/manual_input', methods=['GET', 'POST'])

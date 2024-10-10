@@ -13,6 +13,9 @@ Ration Manager is a Flask-based web application designed for managing ration dis
 - Delete duplicate records.
 - Filter records based on names, addresses, or other criteria.
 - User-friendly interface with Bootstrap for a responsive design.
+- Support for uploading member images and NIC images for better record management.
+- Comprehensive filtering system that allows searching by multiple criteria (name, city, house, contact number) using a single input.
+- Enhanced error handling and user feedback mechanisms.
 
 ## Technologies Used
 - Flask: A micro web framework for Python.
