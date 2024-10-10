@@ -290,20 +290,29 @@ def delete_record(record_id):
     return redirect(url_for('display_records'))
 
 # Delete duplicates route
-@app.route('/delete_duplicates')
+@app.route('/delete_duplicates', methods=['GET', 'POST'])
 @login_required
 def delete_duplicates():
     global all_records
     seen = set()
     unique_records = []
+
     for record in all_records:
-        identifier = (record['Name'], record['Father Name'], record['Address'], record['Contact Number'])
+        # Use .get() method to avoid KeyError
+        name = record.get('Name', '')
+        father_name = record.get('Father Name', '')
+        address = record.get('Address', '')
+        contact_number = record.get('Contact Number', '')
+
+        identifier = (name, father_name, address, contact_number)
         if identifier not in seen:
             seen.add(identifier)
             unique_records.append(record)
+
     all_records = unique_records
     flash('Duplicate records deleted successfully!')
     return redirect(url_for('display_records'))
+
 
 if __name__ == '__main__':
     app.run(debug=True)
