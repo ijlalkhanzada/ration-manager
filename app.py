@@ -5,6 +5,25 @@ import pandas as pd
 from PIL import Image
 import pytesseract
 from werkzeug.utils import secure_filename
+import sqlite3
+
+# Function to save records to the database
+def save_to_database(records):
+    conn = sqlite3.connect('C:\\sqlite\\ration_manager.db')  # Correct path to database
+    cursor = conn.cursor()
+
+    for record in records:
+        cursor.execute('''
+            INSERT INTO recipient (name, father_name, address, contact_number, is_active)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (record['Name'], record['Father Name'], record['Address'], record['Contact Number'], record['is_active']))
+
+    conn.commit()
+    conn.close()
+
+    # Update all_records
+    global all_records
+    all_records.extend(records)  # This line will add new records to the list
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -52,7 +71,7 @@ def logout():
 @login_required
 def display_records():
     global all_records
-    filter_value = request.args.get('filter', '').strip().lower()  # Use .args to get query params
+    filter_value = request.args.get('filter', '').strip().lower()
     filtered_records = all_records
 
     if filter_value:
@@ -104,11 +123,14 @@ def upload_excel():
         for record in records:
             record['is_active'] = True  # Set as active by default
 
-        all_records.extend(records)
+        # Save to database
+        save_to_database(records)
 
         return redirect(url_for('display_records'))
 
     return render_template('upload_excel.html')  # Render the upload form
+
+
 
 def extract_field_from_nic(nic_data, field_name):
     # Simplified extraction logic (You need to define how your data is structured)

@@ -1,7 +1,7 @@
 import sqlite3
 
 # کنکشن بنائیں
-conn = sqlite3.connect('ration_data.db')
+conn = sqlite3.connect('ration_manager.db')
 c = conn.cursor()
 
 # ٹیبل بنائیں
