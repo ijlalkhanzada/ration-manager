@@ -6,24 +6,60 @@ from PIL import Image
 import pytesseract
 from werkzeug.utils import secure_filename
 import sqlite3
+import pandas as pd
+from models import Record  # Importing the Record model
 
-# Function to save records to the database
+
+
+def create_table():
+    try:
+        conn = sqlite3.connect('I:\\ration-manager\\ration_manager.db')
+        cursor = conn.cursor()
+        
+        # Create table if it doesn't exist
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS recipient (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                father_name TEXT NOT NULL,
+                address TEXT NOT NULL,
+                contact_number TEXT NOT NULL,
+                is_active BOOLEAN NOT NULL
+            )
+        ''')
+        
+        conn.commit()  # Changes ko save karein
+        print("Table created successfully.")
+        
+    except Exception as e:
+        print(f"Error occurred: {e}")
+    finally:
+        conn.close()   # Connection band karein
+
 def save_to_database(records):
-    conn = sqlite3.connect('C:\\sqlite\\ration_manager.db')  # Correct path to database
+    conn = sqlite3.connect('I:\\ration-manager\\ration_manager.db')
     cursor = conn.cursor()
 
     for record in records:
-        cursor.execute('''
-            INSERT INTO recipient (name, father_name, address, contact_number, is_active)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (record['Name'], record['Father Name'], record['Address'], record['Contact Number'], record['is_active']))
+        print("Saving record:", record)  # Debugging line
+        try:
+            cursor.execute(''' 
+                INSERT INTO recipient (name, father_name, address, contact_number, is_active) 
+                VALUES (?, ?, ?, ?, ?) 
+            ''', (
+                record.get('Name').strip(),
+                record.get('Father Name', "Not Found").strip(),
+                record.get('Address', "Not Found").strip(),
+                record.get('Contact Number', "Not Found"),
+                record.get('is_active', True)
+            ))
+            print("Successfully inserted record:", record)  # Confirmation message
+        except sqlite3.Error as e:
+            print(f"Error inserting record {record}: {e}")
 
     conn.commit()
     conn.close()
 
-    # Update all_records
-    global all_records
-    all_records.extend(records)  # This line will add new records to the list
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -38,12 +74,23 @@ class User(UserMixin):
     def __init__(self, id):
         self.id = id
 
+
 # Sample users (replace with DB logic)
 users = {'admin': 'password'}  # Example user: admin
 
 @login_manager.user_loader
 def load_user(user_id):
     return User(user_id)
+
+@app.route('/replace_member')
+def replace_member():
+    member_id = request.args.get('member_id')  # Get the member ID from the query parameter
+    old_member = Recipient.query.filter_by(id=member_id).first()  # Fetch the old member data
+
+    if old_member:
+        return render_template('replace_member.html', old_member=old_member)  # Pass the old member data to the template
+    else:
+        return "Member not found", 404  # Handle the case where the member does not exist
 
 # Login route
 @app.route('/login', methods=['GET', 'POST'])
@@ -70,22 +117,31 @@ def logout():
 @app.route('/display', methods=['GET', 'POST'])
 @login_required
 def display_records():
-    global all_records
+    # Fetch records from the database
+    conn = sqlite3.connect('I:\\ration-manager\\ration_manager.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM recipient")
+    all_records = cursor.fetchall()  # Get all records from the database
+    conn.close()
+
+    # Apply filtering if a filter value is provided
     filter_value = request.args.get('filter', '').strip().lower()
     filtered_records = all_records
 
     if filter_value:
         filtered_records = [
             record for record in all_records if (
-                filter_value in str(record.get('Name', '')).lower() or 
-                filter_value in str(record.get('Father Name', '')).lower() or 
-                filter_value in str(record.get('Address', '')).lower() or 
-                filter_value in str(record.get('Contact Number', '')).lower()
+                filter_value in str(record[1]).lower() or  # Name
+                filter_value in str(record[2]).lower() or  # Father Name
+                filter_value in str(record[3]).lower() or  # Address
+                filter_value in str(record[4]).lower()      # Contact Number
             )
         ]
 
-    return render_template('display_records.html', records=filtered_records)
+    # Debugging: print the filtered records
+    print("Filtered Records:", filtered_records)
 
+    return render_template('display_records.html', records=filtered_records)
 
 # Folder to save uploads
 UPLOAD_FOLDER = 'uploads'
@@ -102,21 +158,26 @@ def index():
 # Excel upload route
 @app.route('/upload_excel', methods=['GET', 'POST'])
 def upload_excel():
-    global all_records
     if request.method == 'POST':
         if 'file' not in request.files:
+            flash('No file part')
             return redirect(request.url)
 
         file = request.files['file']
         if file.filename == '':
+            flash('No selected file')
             return redirect(request.url)
 
         # Save the uploaded Excel file
-        file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+        file_path = os.path.join('uploads', secure_filename(file.filename))
         file.save(file_path)
 
         # Read the Excel file
         df = pd.read_excel(file_path)
+
+        # Print column names for debugging
+        print("Columns in the uploaded Excel file:", df.columns)
+
         records = df.to_dict(orient='records')
 
         # Add is_active key to each record
@@ -132,54 +193,54 @@ def upload_excel():
 
 
 
+# Function to extract fields from NIC data using regex
 def extract_field_from_nic(nic_data, field_name):
-    # Simplified extraction logic (You need to define how your data is structured)
-    for line in nic_data.split('\n'):
-        if field_name.lower() in line.lower():
-            return line.split(":")[-1].strip()  # Assuming the format is 'Name: value'
+    field_pattern = rf'{field_name}[:\s]+([A-Za-z\s]+)'
+    match = re.search(field_pattern, nic_data, re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
     return "Not Found"
 
-
-# NIC upload route
 @app.route('/upload_nic', methods=['GET', 'POST'])
 def upload_nic():
     global all_records
     if request.method == 'POST':
-        if 'nic_file' not in request.files:
+        if 'nic_file' not in request.files or request.files['nic_file'].filename == '':
+            flash('No file selected.')
             return redirect(request.url)
 
         nic_file = request.files['nic_file']
-        if nic_file.filename == '':
-            return redirect(request.url)
-
-        # Save and process the NIC image
-        nic_file_path = os.path.join(UPLOAD_FOLDER, nic_file.filename)
+        nic_file_path = os.path.join(UPLOAD_FOLDER, secure_filename(nic_file.filename))
         nic_file.save(nic_file_path)
 
         # Extract text from the NIC image using Tesseract
         nic_data = pytesseract.image_to_string(Image.open(nic_file_path))
 
-        # Process NIC data and extract specific fields (Name, Father Name, etc.)
+        # Try extracting specific fields (Name, Father Name, etc.)
         name = extract_field_from_nic(nic_data, 'Name')
-        father_name = extract_field_from_nic(nic_data, 'Father Name')
+        
+        # Handle KeyError for 'Father Name' gracefully
+        try:
+            father_name = extract_field_from_nic(nic_data, 'Father Name')
+        except KeyError:
+            father_name = "Not Found"
+
         address = extract_field_from_nic(nic_data, 'Address')
         contact_number = extract_field_from_nic(nic_data, 'Contact Number')
 
-        # Create a record dynamically from extracted fields
         records = [{
             'Name': name,
             'Father Name': father_name,
             'Address': address,
             'Contact Number': contact_number,
-            'is_active': True  # Set as active by default
+            'is_active': True
         }]
 
-        # Add to the global list of records
         all_records.extend(records)
 
         return redirect(url_for('display_records'))
 
-    return render_template('upload_nic.html')  # Render the upload form
+    return render_template('upload_nic.html')
 
 
 # Manual input route
@@ -309,9 +370,12 @@ def show_duplicates():
 @app.route('/toggle_status/<int:record_id>')
 @login_required
 def toggle_status(record_id):
-    global all_records
-    all_records[record_id]['is_active'] = not all_records[record_id]['is_active']  # Toggle the status
-    return redirect(url_for('display_records'))
+    record = Record.query.get(record_id)  # Fetching the record from the database
+    if record:
+        record.is_active = not record.is_active
+        db.session.commit()  # Committing changes to the database
+    return redirect(url_for('display_records'))  # Redirecting to the records display page
+
 
 # Delete route
 @app.route('/delete/<int:record_id>')
@@ -346,5 +410,8 @@ def delete_duplicates():
     return redirect(url_for('display_records'))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
+    create_table()  # Ensure this function is called before running the app
     app.run(debug=True)
+
+
