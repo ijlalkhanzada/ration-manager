@@ -8,6 +8,11 @@ from werkzeug.utils import secure_filename
 import sqlite3
 import pandas as pd
 from models import Record  # Importing the Record model
+from models import Recipient
+from flask_sqlalchemy import SQLAlchemy
+import time
+from sqlalchemy.exc import OperationalError
+
 
 
 
@@ -51,7 +56,7 @@ def save_to_database(records):
                 record.get('Father Name', "Not Found").strip(),
                 record.get('Address', "Not Found").strip(),
                 record.get('Contact Number', "Not Found"),
-                record.get('is_active', True)
+                True  # Set as active by default
             ))
             print("Successfully inserted record:", record)  # Confirmation message
         except sqlite3.Error as e:
@@ -62,7 +67,25 @@ def save_to_database(records):
 
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'
+app.config['SECRET_KEY'] = 'your_secret_key'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///I:/ration-manager/ration_manager.db'  # Database URI specified
+
+db = SQLAlchemy(app)  # Initialize SQLAlchemy with Flask app
+
+
+class Recipient(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    father_name = db.Column(db.String(100), nullable=False)
+    address = db.Column(db.String(200), nullable=False)
+    contact_number = db.Column(db.String(20), nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+
+
+with app.app_context():
+    db.create_all()
+    
+
 
 # Flask-Login setup
 login_manager = LoginManager()
@@ -138,10 +161,15 @@ def display_records():
             )
         ]
 
+
     # Debugging: print the filtered records
     print("Filtered Records:", filtered_records)
+    total_recipients = Recipient.query.count()
 
-    return render_template('display_records.html', records=filtered_records)
+    recipients = Recipient.query.order_by(Recipient.id.desc()).all()
+
+
+    return render_template('display_records.html', records=filtered_records, total_recipients=total_recipients)
 
 # Folder to save uploads
 UPLOAD_FOLDER = 'uploads'
@@ -149,6 +177,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # List to store all records
 all_records = []
+
 
 # Home page
 @app.route('/')
@@ -243,128 +272,95 @@ def upload_nic():
     return render_template('upload_nic.html')
 
 
-# Manual input route
+all_records = []
+
+# app.py mein `manual_input` route add karein
 @app.route('/manual_input', methods=['GET', 'POST'])
 def manual_input():
-    global all_records
     if request.method == 'POST':
-        name = request.form['name']
-        father_name = request.form['father_name']
-        address = request.form['address']
-        contact_number = request.form['contact_number']
+        # Form se data ko fetch karein
+        name = request.form.get('name')
+        father_name = request.form.get('father_name')
+        address = request.form.get('address')
+        contact_number = request.form.get('contact_number')
 
-        # Create a folder for the member
-        member_folder = os.path.join(UPLOAD_FOLDER, name.replace(" ", "_"))
-        os.makedirs(member_folder, exist_ok=True)
+        # Naye recipient ka record create karain
+        new_recipient = Recipient(name=name, father_name=father_name, address=address, contact_number=contact_number)
 
-        # Handle file uploads for NIC Front, NIC Back, and Member Image
-        member_image = request.files.get('member_image')
-        nic_front = request.files.get('nic_front')
-        nic_back = request.files.get('nic_back')
+        # Database mein add aur commit karain
+        db.session.add(new_recipient)
+        db.session.commit()
 
-        # Store manual input data
-        record = {
-            'Name': name,
-            'Father Name': father_name,
-            'Address': address,
-            'Contact Number': contact_number,
-            'is_active': True  # Set as active by default
-        }
-# Use os.path.join to ensure correct path formation
-        member_folder = os.path.join(UPLOAD_FOLDER, name.replace(" ", "_"))
-# Save the member image
-        if member_image and allowed_file(member_image.filename):
-            member_filename = secure_filename(member_image.filename)
-            member_image.save(os.path.join(member_folder, member_filename))
-            record['Member Image'] = os.path.join(name.replace(" ", "_"), member_filename).replace("\\", "/")  # Convert any backslashes to forward slashes
-
-        if nic_front and allowed_file(nic_front.filename):
-            front_filename = secure_filename(nic_front.filename)
-            nic_front.save(os.path.join(member_folder, front_filename))
-            record['NIC Front'] = os.path.join(name.replace(" ", "_"), front_filename)
-
-        if nic_back and allowed_file(nic_back.filename):
-            back_filename = secure_filename(nic_back.filename)
-            nic_back.save(os.path.join(member_folder, back_filename))
-            record['NIC Back'] = os.path.join(name.replace(" ", "_"), back_filename)
-
-        all_records.append(record)
-
+        # Add karne ke baad display_records route par redirect karein
         return redirect(url_for('display_records'))
 
-    return render_template('manual_input.html')  # Render the manual input form
+    # Agar GET request hai to manual_input.html render karein
+    return render_template('manual_input.html')
 
-# Allowed file formats
+# Allowed file check
 def allowed_file(filename):
     allowed_extensions = {'png', 'jpg', 'jpeg', 'gif'}
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
+    result = '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
+    print(f"File allowed check: {filename} - {result}")
+    return result
 
-# Serve uploaded files
+# Route to serve uploaded files
 @app.route('/uploads/<path:filename>')
 def uploaded_file(filename):
-    # Use forward slashes in URLs
     filename = filename.replace("\\", "/")
     return send_from_directory(UPLOAD_FOLDER, filename)
 
-
-# Update route
-# Update route
-# Update route
 @app.route('/update/<int:record_id>', methods=['GET', 'POST'])
 @login_required
 def update_record(record_id):
-    global all_records
-
-    # Ensure that the record_id is within the valid range
-    if record_id >= len(all_records) or record_id < 0:
-        flash('Record not found. Invalid record ID.')
-        return redirect(url_for('display_records'))  # Redirect to display page if invalid ID
-    
-    if request.method == 'POST':
-        # Update details
-        all_records[record_id]['Name'] = request.form['name']
-        all_records[record_id]['Father Name'] = request.form['father_name']
-        all_records[record_id]['Address'] = request.form['address']
-        all_records[record_id]['Contact Number'] = request.form['contact_number']
-        
-        # Member folder path
-        member_folder = os.path.join(UPLOAD_FOLDER, all_records[record_id]['Name'].replace(" ", "_"))
-        os.makedirs(member_folder, exist_ok=True)  # Ensure the folder exists
-
-        # Handle file uploads if they exist
-        member_image = request.files.get('member_image')
-        nic_front = request.files.get('nic_front')
-        nic_back = request.files.get('nic_back')
-
-        if member_image and allowed_file(member_image.filename):
-            member_filename = secure_filename(member_image.filename)
-            member_image.save(os.path.join(member_folder, member_filename))
-            all_records[record_id]['Member Image'] = os.path.join(all_records[record_id]['Name'].replace(" ", "_"), member_filename).replace("\\", "/")
-
-        # Update routes mein NIC Front aur Back ka path forward slashes mein convert karen
-        if nic_front and allowed_file(nic_front.filename):
-         front_filename = secure_filename(nic_front.filename)
-         nic_front.save(os.path.join(member_folder, front_filename))
-         all_records[record_id]['NIC Front'] = os.path.join(all_records[record_id]['Name'].replace(" ", "_"), front_filename).replace("\\", "/")
-
-        if nic_back and allowed_file(nic_back.filename):
-            back_filename = secure_filename(nic_back.filename)
-            nic_back.save(os.path.join(member_folder, back_filename))
-            all_records[record_id]['NIC Back'] = os.path.join(all_records[record_id]['Name'].replace(" ", "_"), back_filename).replace("\\", "/")
-
-        flash('Record updated successfully!')
+    record = Recipient.query.get(record_id)
+    if not record:
+        flash("Record not found.")
         return redirect(url_for('display_records'))
 
-    # If GET request, display the form with the current record details
-    record = all_records[record_id]
-    return render_template('update.html', record=record, record_id=record_id)
+    if request.method == 'POST':
+        # Update the record fields with data from the form
+        record.name = request.form['name']
+        record.father_name = request.form['father_name']
+        record.address = request.form['address']
+        record.contact_number = request.form['contact_number']
+        
+        
+        # Check if the activation checkbox is checked
+        record.is_active = 'is_active' in request.form
+        
+        # Commit changes to the database
 
+        db.session.commit()
+        flash("Record updated successfully.")
+        return redirect(url_for('display_records'))
 
-@app.route('/duplicates')
-def show_duplicates():
-    # یہاں آپ ڈپلیکیٹ ریکارڈز کی منطق لکھیں
-    duplicates = get_duplicate_records()   # اپنی منطق کے مطابق اس فنکشن کو لکھیں
-    return render_template('duplicates_display.html', duplicates=duplicates)
+    # Render the form with existing record details for GET requests
+    return render_template('update.html', record=record)
+
+@app.route('/activate_member/<int:record_id>')
+@login_required
+def activate_member(record_id):
+    member = Recipient.query.get(record_id)
+    if member:
+        member.is_active = True  # Set member as active
+        db.session.commit()  # Save changes
+        flash("Member activated successfully")
+    else:
+        flash("Member not found")
+    return redirect(url_for('display_records'))
+
+@app.route('/deactivate_member/<int:record_id>')
+@login_required
+def deactivate_member(record_id):
+    member = Recipient.query.get(record_id)
+    if member:
+        member.is_active = False  # Set member as inactive
+        db.session.commit()  # Save changes
+        flash("Member deactivated successfully")
+    else:
+        flash("Member not found")
+    return redirect(url_for('display_records'))
 
 # Toggle active status route
 @app.route('/toggle_status/<int:record_id>')
@@ -378,11 +374,16 @@ def toggle_status(record_id):
 
 
 # Delete route
-@app.route('/delete/<int:record_id>')
+@app.route('/delete/<int:record_id>', methods=['POST'])
 @login_required
 def delete_record(record_id):
-    global all_records
-    del all_records[record_id]
+    record = Recipient.query.get(record_id)
+    if record:
+        db.session.delete(record)
+        db.session.commit()
+        flash("Record deleted successfully")
+    else:
+        flash("Record not found")
     return redirect(url_for('display_records'))
 
 # Delete duplicates route
@@ -409,9 +410,6 @@ def delete_duplicates():
     flash('Duplicate records deleted successfully!')
     return redirect(url_for('display_records'))
 
-
 if __name__ == "__main__":
     create_table()  # Ensure this function is called before running the app
     app.run(debug=True)
-
-

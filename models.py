@@ -15,10 +15,10 @@ class Record(db.Model):
 
 class Recipient(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100))
-    father_name = db.Column(db.String(100))
-    address = db.Column(db.String(200))
-    contact_number = db.Column(db.String(15))
+    name = db.Column(db.String(100), nullable=False)
+    father_name = db.Column(db.String(100), nullable=False)
+    address = db.Column(db.String(200), nullable=False)
+    contact_number = db.Column(db.String(20), nullable=False)
     is_active = db.Column(db.Boolean, default=True)
 
 class User(db.Model, UserMixin):  # Import UserMixin here
