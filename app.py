@@ -105,16 +105,6 @@ users = {'admin': 'password'}  # Example user: admin
 def load_user(user_id):
     return User(user_id)
 
-@app.route('/replace_member')
-def replace_member():
-    member_id = request.args.get('member_id')  # Get the member ID from the query parameter
-    old_member = Recipient.query.filter_by(id=member_id).first()  # Fetch the old member data
-
-    if old_member:
-        return render_template('replace_member.html', old_member=old_member)  # Pass the old member data to the template
-    else:
-        return "Member not found", 404  # Handle the case where the member does not exist
-
 # Login route
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -314,6 +304,8 @@ def uploaded_file(filename):
 @login_required
 def update_record(record_id):
     record = Recipient.query.get(record_id)
+    print(f"Record found: {record}")  # Debugging line to check if the record is found
+
     if not record:
         flash("Record not found.")
         return redirect(url_for('display_records'))
@@ -325,12 +317,10 @@ def update_record(record_id):
         record.address = request.form['address']
         record.contact_number = request.form['contact_number']
         
-        
         # Check if the activation checkbox is checked
         record.is_active = 'is_active' in request.form
         
         # Commit changes to the database
-
         db.session.commit()
         flash("Record updated successfully.")
         return redirect(url_for('display_records'))
