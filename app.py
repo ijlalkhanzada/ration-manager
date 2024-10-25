@@ -163,7 +163,7 @@ def display_records():
 
 
     # Debugging: print the filtered records
-    print("Filtered Records:", filtered_records)
+    # print("Filtered Records:", filtered_records)
     total_recipients = Recipient.query.count()
 
     recipients = Recipient.query.order_by(Recipient.id.desc()).all()
