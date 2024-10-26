@@ -12,6 +12,8 @@ from models import Recipient
 from flask_sqlalchemy import SQLAlchemy
 import time
 from sqlalchemy.exc import OperationalError
+from helpers import parse_excel
+
 
 
 
@@ -174,43 +176,46 @@ all_records = []
 def index():
     return render_template('index.html')
 
-# Excel upload route
-@app.route('/upload_excel', methods=['GET', 'POST'])
+@app.route('/upload_excel', methods=['POST', 'GET'])
 def upload_excel():
     if request.method == 'POST':
-        if 'file' not in request.files:
-            flash('No file part')
-            return redirect(request.url)
+        file = request.files['excel_file']  # Update here
+        
+        if file:
+            # Excel file ko DataFrame mein read karna
+            data = pd.read_excel(file)
+            print(data.columns)  # Check the columns
+            
+            # Check if required columns exist
+            required_columns = ['S/ No', 'Name', 'Father Name', 'Contact Number', 'Address']
+            for col in required_columns:
+                if col not in data.columns:
+                    flash(f"Excel file mein '{col}' column nahi hai.")
+                    return redirect(url_for('upload_excel'))
 
-        file = request.files['file']
-        if file.filename == '':
-            flash('No selected file')
-            return redirect(request.url)
-
-        # Save the uploaded Excel file
-        file_path = os.path.join('uploads', secure_filename(file.filename))
-        file.save(file_path)
-
-        # Read the Excel file
-        df = pd.read_excel(file_path)
-
-        # Print column names for debugging
-        print("Columns in the uploaded Excel file:", df.columns)
-
-        records = df.to_dict(orient='records')
-
-        # Add is_active key to each record
-        for record in records:
-            record['is_active'] = True  # Set as active by default
-
-        # Save to database
-        save_to_database(records)
-
-        return redirect(url_for('display_records'))
+            # Har row mein member data check karna
+            for index, row in data.iterrows():
+                # Check karen ki member ID database mein already hai ya nahi
+                existing_member = Recipient.query.filter_by(id=row['S/ No']).first()
+                
+                # Agar member already database mein nahi hai to naye member ko add karen
+                if not existing_member:
+                    new_member = Recipient(
+                        id=row['S/ No'],  # Using 'S/ No' for id
+                        name=row['Name'],  # Using 'Name'
+                        father_name=row['Father Name'],  # Using 'Father Name'
+                        address=row['Address'],  # Using 'Address'
+                        contact_number=row['Contact Number']  # Using 'Contact Number'
+                    )
+                    db.session.add(new_member)
+            
+            # Database changes ko commit karna
+            db.session.commit()
+            flash("Naye members add kar diye gaye hain!")
+            
+            return redirect(url_for('display_records'))
 
     return render_template('upload_excel.html')  # Render the upload form
-
-
 
 # Function to extract fields from NIC data using regex
 def extract_field_from_nic(nic_data, field_name):
@@ -294,6 +299,8 @@ def allowed_file(filename):
     print(f"File allowed check: {filename} - {result}")
     return result
 
+
+
 # Route to serve uploaded files
 @app.route('/uploads/<path:filename>')
 def uploaded_file(filename):
@@ -375,6 +382,8 @@ def delete_record(record_id):
     else:
         flash("Record not found")
     return redirect(url_for('display_records'))
+
+
 
 # Delete duplicates route
 @app.route('/delete_duplicates', methods=['GET', 'POST'])
