@@ -1,6 +1,6 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user
+from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory, session
+from flask_login import LoginManager, UserMixin, login_required, current_user, login_user, login_required, logout_user
 import pandas as pd
 from PIL import Image
 import pytesseract
@@ -11,8 +11,11 @@ from models import Record  # Importing the Record model
 from models import Recipient
 from flask_sqlalchemy import SQLAlchemy
 import time
+import secrets
+
 from sqlalchemy.exc import OperationalError
 from helpers import parse_excel
+from uuid import uuid4  # Generate a unique link for sharing
 
 
 
@@ -92,7 +95,7 @@ with app.app_context():
 # Flask-Login setup
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'login'  # Redirect to login if not authenticated
+login_manager.login_view = 'login'  
 
 # User class
 class User(UserMixin):
@@ -269,11 +272,27 @@ def upload_nic():
 
 all_records = []
 
-# app.py mein `manual_input` route add karein
+# Generate link function
+@app.route('/generate_link')
+@login_required
+def generate_link():
+    # Generate token (random token ya hashed unique value bana sakte hain)
+    token = secrets.token_urlsafe(16)
+    
+    # Store the token in session ya temporary storage mein
+    session['shareable_token'] = token
+
+    # Generated URL create karein
+    shareable_url = url_for('manual_input', token=token, _external=True)
+
+    # Manual input page par redirect aur generated link ke saath display karain
+    return render_template('manual_input.html', shareable_url=shareable_url, show_generate_link=True)# Manual Input function
 @app.route('/manual_input', methods=['GET', 'POST'])
+# @login_required  # Ye ensure karega ke sirf logged-in users ye page dekh saken
 def manual_input():
+
+    # Agar POST request hai to form data handle karein
     if request.method == 'POST':
-        # Form se data ko fetch karein
         name = request.form.get('name')
         father_name = request.form.get('father_name')
         address = request.form.get('address')
@@ -287,18 +306,12 @@ def manual_input():
         db.session.commit()
 
         # Add karne ke baad display_records route par redirect karein
-        return redirect(url_for('display_records'))
+        return render_template('confirmation.html', member=new_recipient)
 
-    # Agar GET request hai to manual_input.html render karein
-    return render_template('manual_input.html')
+    # Agar GET request hai, tab ye check karein
+    show_generate_link = current_user.is_authenticated if 'current_user' in globals() else False
 
-# Allowed file check
-def allowed_file(filename):
-    allowed_extensions = {'png', 'jpg', 'jpeg', 'gif'}
-    result = '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
-    print(f"File allowed check: {filename} - {result}")
-    return result
-
+    return render_template('manual_input.html', show_generate_link=show_generate_link)
 
 
 # Route to serve uploaded files

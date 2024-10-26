@@ -9,7 +9,9 @@
 <body>
     <div class="container mt-5">
         <h2>Manual Input</h2>
-        <form action="{{ url_for('manual_input') }}" method="post" enctype="multipart/form-data">
+
+        <!-- Main Form -->
+        <form action="{{ url_for('manual_input', token=request.args.get('token')) }}" method="post" enctype="multipart/form-data">
             <div class="form-group">
                 <label for="name">Name:</label>
                 <input type="text" class="form-control" name="name" required>
@@ -40,8 +42,20 @@
             </div>
             <button type="submit" class="btn btn-primary">Submit</button>
         </form>
-        
-        <a href="{{ url_for('index') }}" class="btn btn-secondary mt-3">Back to Home</a>
-    </div>
+
+        {% if show_generate_link %}
+        <button onclick="window.location.href='{{ url_for('generate_link') }}'">Generate Shareable Link</button>
+    {% endif %}
+
+    <!-- Show the generated shareable link if available -->
+    {% if shareable_url %}
+        <div class="alert alert-info mt-3">
+            <strong>Shareable Link:</strong> <input type="text" class="form-control" value="{{ shareable_url }}" readonly>
+            <small>Copy this link to share the form.</small>
+        </div>
+    {% endif %}
+
+    <a href="{{ url_for('index') }}" class="btn btn-secondary mt-3">Back to Home</a>
+</div>
 </body>
 </html>
