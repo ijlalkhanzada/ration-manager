@@ -5,29 +5,76 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <title>Ration Manager</title>
+    <title>Ration Manager - Home</title>
+    <style>
+        .container {
+            max-width: 600px;
+            padding: 40px 20px;
+            background-color: #f9f9f9;
+            border-radius: 10px;
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .login-section {
+            padding: 20px;
+            border-radius: 10px;
+            background: #ffffff;
+            margin-bottom: 30px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.05);
+        }
+        h2 {
+            color: #333;
+            font-weight: 700;
+        }
+        .btn-custom {
+            font-size: 18px;
+            padding: 10px 20px;
+            width: 100%;
+        }
+        .separator {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .separator::before,
+        .separator::after {
+            content: "";
+            display: inline-block;
+            width: 40%;
+            height: 1px;
+            background: #ddd;
+            vertical-align: middle;
+            margin: 0 10px;
+        }
+    </style>
 </head>
 <body>
     <div class="container mt-5">
-        <h1 class="text-center">Ration Manager</h1>
-        <div class="text-center mb-4">
-            <p class="lead">Welcome to the Ration Manager System. Please choose an action:</p>
+        <h2 class="text-center mb-4">Welcome to Ration Manager</h2>
+
+        <!-- Login Section -->
+        <div class="login-section">
+            <h4>Login</h4>
+            <form method="POST" action="{{ url_for('login') }}">
+                <div class="form-group">
+                    <label for="username">Username:</label>
+                    <input type="text" class="form-control" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" class="form-control" id="password" name="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-custom">Login</button>
+            </form>
+            {% if messages %}
+                <div class="alert alert-danger mt-3">{{ messages[0] }}</div>
+            {% endif %}
         </div>
-        
-        <div class="text-center">
-            <a href="{{ url_for('upload_excel') }}" class="btn btn-primary btn-lg mx-2">
-                <i class="fas fa-upload"></i> Upload Excel
-            </a>
-            <a href="{{ url_for('upload_nic') }}" class="btn btn-secondary btn-lg mx-2">
-                <i class="fas fa-id-card"></i> Upload NIC
-            </a>
-            <a href="{{ url_for('manual_input') }}" class="btn btn-success btn-lg mx-2">
-                <i class="fas fa-plus"></i> Manual Input
-            </a>
-            <a href="{{ url_for('display_records') }}" class="btn btn-info btn-lg mx-2">
-                <i class="fas fa-eye"></i> View Records
-            </a>
-        </div>
+
+        <div class="separator">or</div>
+
+        <!-- Manual Input Button -->
+        <a href="{{ url_for('manual_input') }}" class="btn btn-success btn-custom">
+            <i class="fas fa-plus"></i> Go to Manual Input
+        </a>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>

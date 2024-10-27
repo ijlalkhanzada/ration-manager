@@ -12,14 +12,9 @@ from models import Recipient
 from flask_sqlalchemy import SQLAlchemy
 import time
 import secrets
-
 from sqlalchemy.exc import OperationalError
 from helpers import parse_excel
 from uuid import uuid4  # Generate a unique link for sharing
-
-
-
-
 
 def create_table():
     try:
@@ -86,12 +81,9 @@ class Recipient(db.Model):
     contact_number = db.Column(db.String(20), nullable=False)
     is_active = db.Column(db.Boolean, default=True)
 
-
 with app.app_context():
     db.create_all()
     
-
-
 # Flask-Login setup
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -104,7 +96,7 @@ class User(UserMixin):
 
 
 # Sample users (replace with DB logic)
-users = {'admin': 'password'}  # Example user: admin
+users = {'admin': 'admin'}  # Example user: admin
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -182,14 +174,14 @@ def index():
 @app.route('/upload_excel', methods=['POST', 'GET'])
 def upload_excel():
     if request.method == 'POST':
-        file = request.files['excel_file']  # Update here
+        file = request.files['excel_file']  # Excel file ko retrieve karna
         
         if file:
             # Excel file ko DataFrame mein read karna
             data = pd.read_excel(file)
             print(data.columns)  # Check the columns
             
-            # Check if required columns exist
+            # Required columns ki check
             required_columns = ['S/ No', 'Name', 'Father Name', 'Contact Number', 'Address']
             for col in required_columns:
                 if col not in data.columns:
@@ -201,32 +193,36 @@ def upload_excel():
                 # Check karen ki member ID database mein already hai ya nahi
                 existing_member = Recipient.query.filter_by(id=row['S/ No']).first()
                 
-                # Agar member already database mein nahi hai to naye member ko add karen
-                if not existing_member:
+                # Agar member already database mein hai
+                if existing_member:
+                    # Update existing member ka data agar koi changes hain
+                    existing_member.name = row['Name']
+                    existing_member.father_name = row['Father Name']
+                    existing_member.address = row['Address']
+                    existing_member.contact_number = row['Contact Number']
+                    
+                    # Agar member inactive hai to use active karen
+                    if not existing_member.is_active:
+                        existing_member.is_active = True
+                else:
+                    # Agar member already database mein nahi hai to naye member ko add karen
                     new_member = Recipient(
                         id=row['S/ No'],  # Using 'S/ No' for id
                         name=row['Name'],  # Using 'Name'
                         father_name=row['Father Name'],  # Using 'Father Name'
                         address=row['Address'],  # Using 'Address'
-                        contact_number=row['Contact Number']  # Using 'Contact Number'
+                        contact_number=row['Contact Number'],  # Using 'Contact Number'
+                        is_active=True  # Naye member ko active status dena
                     )
                     db.session.add(new_member)
             
             # Database changes ko commit karna
             db.session.commit()
-            flash("Naye members add kar diye gaye hain!")
+            flash("Naye members ya updated members add kar diye gaye hain!")
             
             return redirect(url_for('display_records'))
 
     return render_template('upload_excel.html')  # Render the upload form
-
-# Function to extract fields from NIC data using regex
-def extract_field_from_nic(nic_data, field_name):
-    field_pattern = rf'{field_name}[:\s]+([A-Za-z\s]+)'
-    match = re.search(field_pattern, nic_data, re.IGNORECASE)
-    if match:
-        return match.group(1).strip()
-    return "Not Found"
 
 @app.route('/upload_nic', methods=['GET', 'POST'])
 def upload_nic():
@@ -290,7 +286,6 @@ def generate_link():
 @app.route('/manual_input', methods=['GET', 'POST'])
 # @login_required  # Ye ensure karega ke sirf logged-in users ye page dekh saken
 def manual_input():
-
     # Agar POST request hai to form data handle karein
     if request.method == 'POST':
         name = request.form.get('name')
@@ -298,21 +293,27 @@ def manual_input():
         address = request.form.get('address')
         contact_number = request.form.get('contact_number')
 
-        # Naye recipient ka record create karain
-        new_recipient = Recipient(name=name, father_name=father_name, address=address, contact_number=contact_number)
+        # Member ki ID ko check karne ke liye
+        existing_member = Recipient.query.filter_by(name=name, father_name=father_name, contact_number=contact_number).first()
 
-        # Database mein add aur commit karain
-        db.session.add(new_recipient)
-        db.session.commit()
+        if existing_member:
+            flash("Yeh member pehle se database mein maujood hai.")
+            return redirect(url_for('manual_input'))  # Wapas manual input form par redirect karein
+        else:
+            # Naye recipient ka record create karain
+            new_recipient = Recipient(name=name, father_name=father_name, address=address, contact_number=contact_number)
 
-        # Add karne ke baad display_records route par redirect karein
-        return render_template('confirmation.html', member=new_recipient)
+            # Database mein add aur commit karain
+            db.session.add(new_recipient)
+            db.session.commit()
+
+            # Add karne ke baad display_records route par redirect karein
+            return render_template('confirmation.html', member=new_recipient)
 
     # Agar GET request hai, tab ye check karein
     show_generate_link = current_user.is_authenticated if 'current_user' in globals() else False
 
     return render_template('manual_input.html', show_generate_link=show_generate_link)
-
 
 # Route to serve uploaded files
 @app.route('/uploads/<path:filename>')

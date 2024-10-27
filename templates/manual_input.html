@@ -5,57 +5,99 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <title>Manual Input</title>
+    <style>
+        .form-container {
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </head>
 <body>
     <div class="container mt-5">
-        <h2>Manual Input</h2>
+        <div class="form-container">
+            <h2>Manual Input</h2>
+            
+            <!-- Main Form -->
+            <form action="{{ url_for('manual_input', token=request.args.get('token')) }}" method="post" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="name">Name:</label>
+                    <input type="text" class="form-control" name="name" placeholder="Enter name" required>
+                </div>
+                <div class="form-group">
+                    <label for="father_name">Father's Name:</label>
+                    <input type="text" class="form-control" name="father_name" placeholder="Enter father's name" required>
+                </div>
+                <div class="form-group">
+                    <label for="address">Address:</label>
+                    <input type="text" class="form-control" name="address" placeholder="Enter address" required>
+                </div>
+                <div class="form-group">
+                    <label for="contact_number">Contact Number:</label>
+                    <input type="text" class="form-control" name="contact_number" placeholder="Enter contact number" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Submit</button>
+            </form>
 
-        <!-- Main Form -->
-        <form action="{{ url_for('manual_input', token=request.args.get('token')) }}" method="post" enctype="multipart/form-data">
-            <div class="form-group">
-                <label for="name">Name:</label>
-                <input type="text" class="form-control" name="name" required>
-            </div>
-            <div class="form-group">
-                <label for="father_name">Father Name:</label>
-                <input type="text" class="form-control" name="father_name" required>
-            </div>
-            <div class="form-group">
-                <label for="address">Address:</label>
-                <input type="text" class="form-control" name="address" required>
-            </div>
-            <div class="form-group">
-                <label for="contact_number">Contact Number:</label>
-                <input type="text" class="form-control" name="contact_number" required>
-            </div>
-            <div class="form-group">
-                <label for="member_image">Upload Member Image:</label>
-                <input type="file" class="form-control-file" name="member_image" accept="image/*" required>
-            </div>
-            <div class="form-group">
-                <label for="nic_front">Upload NIC Front:</label>
-                <input type="file" class="form-control-file" name="nic_front" accept="image/*" required>
-            </div>
-            <div class="form-group">
-                <label for="nic_back">Upload NIC Back:</label>
-                <input type="file" class="form-control-file" name="nic_back" accept="image/*" required>
-            </div>
-            <button type="submit" class="btn btn-primary">Submit</button>
-        </form>
+            <!-- Generate Link Button (Visible only if allowed) -->
+            {% if show_generate_link %}
+                <button class="btn btn-info btn-block mt-3" onclick="window.location.href='{{ url_for('generate_link') }}'">Generate Shareable Link</button>
+            {% endif %}
 
-        {% if show_generate_link %}
-        <button onclick="window.location.href='{{ url_for('generate_link') }}'">Generate Shareable Link</button>
-    {% endif %}
+            <!-- Display Shareable Link if Available -->
+            {% if shareable_url %}
+                <div class="alert alert-info mt-3">
+                    <strong>Shareable Link:</strong> 
+                    <input type="text" class="form-control" value="{{ shareable_url }}" readonly>
+                    <small>Copy this link to share the form.</small>
+                </div>
+            {% endif %}
 
-    <!-- Show the generated shareable link if available -->
-    {% if shareable_url %}
-        <div class="alert alert-info mt-3">
-            <strong>Shareable Link:</strong> <input type="text" class="form-control" value="{{ shareable_url }}" readonly>
-            <small>Copy this link to share the form.</small>
+            <a href="{{ url_for('index') }}" class="btn btn-secondary btn-block mt-3">Back to Home</a>
         </div>
-    {% endif %}
+    </div>
 
-    <a href="{{ url_for('index') }}" class="btn btn-secondary mt-3">Back to Home</a>
-</div>
+    <!-- Bootstrap Modal for Alerts -->
+    <div class="modal fade" id="alertModal" tabindex="-1" role="dialog" aria-labelledby="alertModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="alertModalLabel">Alert</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="alertModalBody">
+                    <!-- Alert message will be injected here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Check for flashed messages and show alerts -->
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <script>
+                $(document).ready(function() {
+                    // Show the modal and set the alert message
+                    $('#alertModalBody').text("{{ messages[0] }}");
+                    $('#alertModal').modal('show');
+                });
+            </script>
+        {% endif %}
+    {% endwith %}
 </body>
 </html>

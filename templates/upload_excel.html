@@ -1,8 +1,64 @@
-<form method="POST" enctype="multipart/form-data" action="{{ url_for('upload_excel') }}">
-    <div class="form-group">
-        <label for="file">Choose Excel file:</label>
-        <input type="file" class="form-control-file" name="excel_file" required>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Excel File</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .form-container {
+            background-color: white;
+            border-radius: 0.5rem;
+            padding: 30px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 80px; /* To create space for the fixed navbar */
+        }
+    </style>
+</head>
+<body>
+    <!-- Fixed Navbar at the top -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+        <div class="container-fluid">
+            <span class="navbar-text mr-3">Total Members: {{ total_recipients }}</span>
+
+            <!-- Filter Form -->
+            <form method="GET" action="{{ url_for('display_records') }}" class="form-inline d-flex mr-3">
+                <input type="text" name="filter" class="form-control mr-2" placeholder="Filter by Name or City">
+                <button type="submit" class="btn btn-primary">Filter</button>
+            </form>
+
+            <!-- Button Group -->
+            <div class="btn-group mr-3">
+                <a href="{{ url_for('upload_excel') }}" class="btn btn-primary">Upload Excel</a>
+                <a href="{{ url_for('upload_nic') }}" class="btn btn-secondary">Upload NIC</a>
+                <a href="{{ url_for('manual_input') }}" class="btn btn-info">Manual Input</a>
+            </div>
+
+            <!-- Logout Button -->
+            <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
+        </div>
+    </nav>
+
+    <!-- Page Content -->
+    <div class="container">
+        <div class="form-container">
+            <h3 class="text-center mb-4">Upload Your Excel File</h3>
+            <form method="POST" enctype="multipart/form-data" action="{{ url_for('upload_excel') }}">
+                <div class="form-group">
+                    <label for="file">Choose Excel file:</label>
+                    <input type="file" class="form-control-file" name="excel_file" id="file" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block mt-3">Upload</button>
+            </form>
+            <a href="{{ url_for('display_records') }}" class="btn btn-secondary btn-block mt-3">Back to Records</a>
+        </div>
     </div>
-    <button type="submit" class="btn btn-primary">Upload</button>
-</form>
-<a href="{{ url_for('index') }}" class="btn btn-secondary mt-3">Back to Home</a>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
