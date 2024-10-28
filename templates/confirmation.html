@@ -15,21 +15,12 @@
                 <p class="card-text"><strong>Father's Name:</strong> {{ member.father_name }}</p>
                 <p class="card-text"><strong>Address:</strong> {{ member.address }}</p>
                 <p class="card-text"><strong>Contact Number:</strong> {{ member.contact_number }}</p>
-                
+                <p class="card-text"><strong>Reference:</strong> {{ reference }}</p>  <!-- Reference here -->
+
                 <!-- Agar images bhi submit ki gayi hain -->
                 {% if member_image_url %}
                     <p><strong>Member Image:</strong></p>
                     <img src="{{ member_image_url }}" class="img-fluid mb-3" alt="Member Image">
-                {% endif %}
-                
-                {% if nic_front_url %}
-                    <p><strong>NIC Front:</strong></p>
-                    <img src="{{ nic_front_url }}" class="img-fluid mb-3" alt="NIC Front Image">
-                {% endif %}
-                
-                {% if nic_back_url %}
-                    <p><strong>NIC Back:</strong></p>
-                    <img src="{{ nic_back_url }}" class="img-fluid mb-3" alt="NIC Back Image">
                 {% endif %}
             </div>
         </div>

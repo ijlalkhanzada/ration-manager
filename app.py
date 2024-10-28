@@ -10,11 +10,13 @@ import pandas as pd
 from models import Record  # Importing the Record model
 from models import Recipient
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.exc import OperationalError
 import time
 import secrets
 from sqlalchemy.exc import OperationalError
 from helpers import parse_excel
 from uuid import uuid4  # Generate a unique link for sharing
+from flask_migrate import Migrate
 
 def create_table():
     try:
@@ -71,6 +73,7 @@ app.config['SECRET_KEY'] = 'your_secret_key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///I:/ration-manager/ration_manager.db'  # Database URI specified
 
 db = SQLAlchemy(app)  # Initialize SQLAlchemy with Flask app
+migrate = Migrate(app, db)  # مائیگریٹ انسٹینس
 
 
 class Recipient(db.Model):
@@ -79,6 +82,8 @@ class Recipient(db.Model):
     father_name = db.Column(db.String(100), nullable=False)
     address = db.Column(db.String(200), nullable=False)
     contact_number = db.Column(db.String(20), nullable=False)
+    member_image = db.Column(db.String, nullable=True)  # نیا کالم برائے ممبر کی تصویر
+    reference = db.Column(db.String(100), nullable=True)  # نیا کالم برائے ریفرنس
     is_active = db.Column(db.Boolean, default=True)
 
 with app.app_context():
@@ -127,45 +132,35 @@ def logout():
 @app.route('/display', methods=['GET', 'POST'])
 @login_required
 def display_records():
-    # Fetch records from the database
-    conn = sqlite3.connect('I:\\ration-manager\\ration_manager.db')
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM recipient")
-    all_records = cursor.fetchall()  # Get all records from the database
-    conn.close()
+    
+    # Fetch all recipients from the database
+    recipients = Recipient.query.order_by(Recipient.id.desc()).all()
 
     # Apply filtering if a filter value is provided
     filter_value = request.args.get('filter', '').strip().lower()
-    filtered_records = all_records
+    
+    # Filter the records based on the filter value
+    filtered_records = recipients  # Start with all records
 
     if filter_value:
         filtered_records = [
-            record for record in all_records if (
-                filter_value in str(record[1]).lower() or  # Name
-                filter_value in str(record[2]).lower() or  # Father Name
-                filter_value in str(record[3]).lower() or  # Address
-                filter_value in str(record[4]).lower()      # Contact Number
+            record for record in recipients if (
+                filter_value in record.name.lower() or  # Name
+                filter_value in record.father_name.lower() or  # Father Name
+                filter_value in record.address.lower() or  # Address
+                filter_value in record.contact_number.lower()      # Contact Number
             )
         ]
 
-
-    # Debugging: print the filtered records
-    # print("Filtered Records:", filtered_records)
-    total_recipients = Recipient.query.count()
-
-    recipients = Recipient.query.order_by(Recipient.id.desc()).all()
-
+    total_recipients = len(filtered_records)  # Total filtered records count
 
     return render_template('display_records.html', records=filtered_records, total_recipients=total_recipients)
-
 # Folder to save uploads
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # List to store all records
 all_records = []
-
-
 # Home page
 @app.route('/')
 def index():
@@ -223,49 +218,6 @@ def upload_excel():
             return redirect(url_for('display_records'))
 
     return render_template('upload_excel.html')  # Render the upload form
-
-@app.route('/upload_nic', methods=['GET', 'POST'])
-def upload_nic():
-    global all_records
-    if request.method == 'POST':
-        if 'nic_file' not in request.files or request.files['nic_file'].filename == '':
-            flash('No file selected.')
-            return redirect(request.url)
-
-        nic_file = request.files['nic_file']
-        nic_file_path = os.path.join(UPLOAD_FOLDER, secure_filename(nic_file.filename))
-        nic_file.save(nic_file_path)
-
-        # Extract text from the NIC image using Tesseract
-        nic_data = pytesseract.image_to_string(Image.open(nic_file_path))
-
-        # Try extracting specific fields (Name, Father Name, etc.)
-        name = extract_field_from_nic(nic_data, 'Name')
-        
-        # Handle KeyError for 'Father Name' gracefully
-        try:
-            father_name = extract_field_from_nic(nic_data, 'Father Name')
-        except KeyError:
-            father_name = "Not Found"
-
-        address = extract_field_from_nic(nic_data, 'Address')
-        contact_number = extract_field_from_nic(nic_data, 'Contact Number')
-
-        records = [{
-            'Name': name,
-            'Father Name': father_name,
-            'Address': address,
-            'Contact Number': contact_number,
-            'is_active': True
-        }]
-
-        all_records.extend(records)
-
-        return redirect(url_for('display_records'))
-
-    return render_template('upload_nic.html')
-
-
 all_records = []
 
 # Generate link function
@@ -284,7 +236,6 @@ def generate_link():
     # Manual input page par redirect aur generated link ke saath display karain
     return render_template('manual_input.html', shareable_url=shareable_url, show_generate_link=True)# Manual Input function
 @app.route('/manual_input', methods=['GET', 'POST'])
-# @login_required  # Ye ensure karega ke sirf logged-in users ye page dekh saken
 def manual_input():
     # Agar POST request hai to form data handle karein
     if request.method == 'POST':
@@ -292,28 +243,43 @@ def manual_input():
         father_name = request.form.get('father_name')
         address = request.form.get('address')
         contact_number = request.form.get('contact_number')
+        reference = request.form.get('reference')
+
+        # Image کو اپ لوڈ کریں
+        member_image = request.files['member_image']
+        member_image_filename = secure_filename(member_image.filename)
+        member_image_path = os.path.join('static/images', member_image_filename)
+        member_image.save(member_image_path)
 
         # Member ki ID ko check karne ke liye
-        existing_member = Recipient.query.filter_by(name=name, father_name=father_name, contact_number=contact_number).first()
+        existing_member = Recipient.query.filter_by(name=name, father_name=father_name, contact_number=contact_number, reference=reference).first()
 
         if existing_member:
             flash("Yeh member pehle se database mein maujood hai.")
             return redirect(url_for('manual_input'))  # Wapas manual input form par redirect karein
         else:
             # Naye recipient ka record create karain
-            new_recipient = Recipient(name=name, father_name=father_name, address=address, contact_number=contact_number)
+            new_recipient = Recipient(
+                name=name, 
+                father_name=father_name, 
+                address=address, 
+                contact_number=contact_number, 
+                reference=reference,  # Reference ko add karein
+                member_image=member_image_filename  # Member image ka naam save karein
+            )
 
             # Database mein add aur commit karain
             db.session.add(new_recipient)
             db.session.commit()
 
-            # Add karne ke baad display_records route par redirect karein
-            return render_template('confirmation.html', member=new_recipient)
+            # Add karne ke baad confirmation page par redirect karein
+            return render_template('confirmation.html', member=new_recipient, member_image_url=url_for('static', filename='images/' + new_recipient.member_image), reference=new_recipient.reference)
 
     # Agar GET request hai, tab ye check karein
-    show_generate_link = current_user.is_authenticated if 'current_user' in globals() else False
+    show_generate_link = current_user.is_authenticated  # Agar user login hai to link button dikhaye
 
     return render_template('manual_input.html', show_generate_link=show_generate_link)
+
 
 # Route to serve uploaded files
 @app.route('/uploads/<path:filename>')
@@ -395,32 +361,6 @@ def delete_record(record_id):
         flash("Record deleted successfully")
     else:
         flash("Record not found")
-    return redirect(url_for('display_records'))
-
-
-
-# Delete duplicates route
-@app.route('/delete_duplicates', methods=['GET', 'POST'])
-@login_required
-def delete_duplicates():
-    global all_records
-    seen = set()
-    unique_records = []
-
-    for record in all_records:
-        # Use .get() method to avoid KeyError
-        name = record.get('Name', '')
-        father_name = record.get('Father Name', '')
-        address = record.get('Address', '')
-        contact_number = record.get('Contact Number', '')
-
-        identifier = (name, father_name, address, contact_number)
-        if identifier not in seen:
-            seen.add(identifier)
-            unique_records.append(record)
-
-    all_records = unique_records
-    flash('Duplicate records deleted successfully!')
     return redirect(url_for('display_records'))
 
 if __name__ == "__main__":
