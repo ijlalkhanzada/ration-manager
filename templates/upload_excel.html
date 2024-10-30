@@ -19,25 +19,24 @@
     </style>
 </head>
 <body>
-    <!-- Fixed Navbar at the top -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
         <div class="container-fluid">
-            <span class="navbar-text mr-3">Total Members: {{ total_recipients }}</span>
-
-            <!-- Filter Form -->
-            <form method="GET" action="{{ url_for('display_records') }}" class="form-inline d-flex mr-3">
-                <input type="text" name="filter" class="form-control mr-2" placeholder="Filter by Name or City">
-                <button type="submit" class="btn btn-primary">Filter</button>
-            </form>
-
-            <!-- Button Group -->
+            <!-- Back to Display Page Button -->
+            <a href="{{ url_for('display_records') }}" class="btn btn-secondary mr-3">
+                <i class="fas fa-arrow-left"></i> Back to Display
+            </a>
+            
+            <!-- Button Group with Icons -->
             <div class="btn-group mr-3">
-                <a href="{{ url_for('upload_excel') }}" class="btn btn-primary">Upload Excel</a>
-                <a href="{{ url_for('manual_input') }}" class="btn btn-info">Manual Input</a>
+                <a href="{{ url_for('manual_input') }}" class="btn btn-info">
+                    <i class="fas fa-pencil-alt"></i> Manual Input
+                </a>
             </div>
 
             <!-- Logout Button -->
-            <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
+            <a href="{{ url_for('logout') }}" class="btn btn-danger">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
         </div>
     </nav>
 
@@ -52,7 +51,6 @@
                 </div>
                 <button type="submit" class="btn btn-primary btn-block mt-3">Upload</button>
             </form>
-            <a href="{{ url_for('display_records') }}" class="btn btn-secondary btn-block mt-3">Back to Records</a>
         </div>
     </div>
 

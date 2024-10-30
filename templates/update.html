@@ -5,16 +5,58 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Update Member Details</title>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <script>
         function confirmDelete() {
             return confirm("Are you sure you want to delete this record?");
         }
     </script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            margin-top: 70px; /* Extra margin for fixed navbar */
+            padding: 20px;
+            border-radius: 5px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            color: #343a40;
+        }
+    </style>
 </head>
 <body>
-    <div class="container mt-5">
-        <h2 class="text-center">Update Member Details</h2>
-        {% if record %}
+    <!-- Top Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+        <div class="container-fluid">
+            <!-- Back to Display Page Button -->
+            <a href="{{ url_for('display_records') }}" class="btn btn-secondary mr-3">
+                <i class="fas fa-arrow-left"></i> Back to Display
+            </a>
+            
+            <!-- Button Group with Icons -->
+            <div class="btn-group mr-3">
+                <a href="{{ url_for('upload_excel') }}" class="btn btn-primary">
+                    <i class="fas fa-upload"></i> Upload Excel
+                </a>
+                <a href="{{ url_for('manual_input') }}" class="btn btn-info">
+                    <i class="fas fa-pencil-alt"></i> Manual Input
+                </a>
+            </div>
+
+            <!-- Logout Button -->
+            <a href="{{ url_for('logout') }}" class="btn btn-danger">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2 class="text-center mb-4">Update Member Details</h2>
+        
+        {% if record is not none %}
         <form method="POST">
             <div class="form-group">
                 <label for="name">Name</label>
@@ -33,19 +75,26 @@
                 <input type="text" class="form-control" name="contact_number" value="{{ record.contact_number }}" required>
             </div>
             <div class="form-group">
-                <label for="is_active">Active</label>
-                <input type="checkbox" name="is_active" {% if record.is_active %}checked{% endif %}> 
+                <label for="member_image">Image Reference</label>
+                <input type="text" class="form-control" name="member_image" value="{{ record.member_image }}" placeholder="Image URL" required>
             </div>
-            <button type="submit" class="btn btn-primary">Update</button>
+
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Update</button>
+            </div>
         </form>
 
-        <!-- Delete button with confirmation -->
-        <form action="{{ url_for('delete_record', record_id=record.id) }}" method="POST" style="display:inline;" onsubmit="return confirmDelete();">
-            <button type="submit" class="btn btn-danger">Delete</button>
-        </form>
-
+        <div class="form-group">
+            <!-- Delete button with confirmation -->
+            <form action="{{ url_for('delete_record', record_id=record.id) }}" method="POST" onsubmit="return confirmDelete();">
+                <button type="submit" class="btn btn-danger">Delete</button>
+            </form>
+        </div>
+        
         {% else %}
-            <p>Record not found.</p>
+            <div class="alert alert-danger text-center" role="alert">
+                <strong>Warning!</strong> Record not found.
+            </div>
         {% endif %}
     </div>
 

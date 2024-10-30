@@ -185,6 +185,13 @@ def upload_excel():
 
             # Har row mein member data check karna
             for index, row in data.iterrows():
+                # NaN values ko handle karna
+                if pd.isna(row['Name']) or pd.isna(row['Father Name']) or pd.isna(row['Address']):
+                    flash(f"Row {index + 1}: Name, Father Name, aur Address fields zaroori hain.")
+                    continue  # Skip this row if required fields are NaN
+
+                contact_number = row['Contact Number'] if pd.notna(row['Contact Number']) else 'N/A'
+                
                 # Check karen ki member ID database mein already hai ya nahi
                 existing_member = Recipient.query.filter_by(id=row['S/ No']).first()
                 
@@ -194,7 +201,7 @@ def upload_excel():
                     existing_member.name = row['Name']
                     existing_member.father_name = row['Father Name']
                     existing_member.address = row['Address']
-                    existing_member.contact_number = row['Contact Number']
+                    existing_member.contact_number = contact_number
                     
                     # Agar member inactive hai to use active karen
                     if not existing_member.is_active:
@@ -206,7 +213,7 @@ def upload_excel():
                         name=row['Name'],  # Using 'Name'
                         father_name=row['Father Name'],  # Using 'Father Name'
                         address=row['Address'],  # Using 'Address'
-                        contact_number=row['Contact Number'],  # Using 'Contact Number'
+                        contact_number=contact_number,  # Using 'Contact Number'
                         is_active=True  # Naye member ko active status dena
                     )
                     db.session.add(new_member)
@@ -218,6 +225,7 @@ def upload_excel():
             return redirect(url_for('display_records'))
 
     return render_template('upload_excel.html')  # Render the upload form
+
 all_records = []
 
 # Generate link function

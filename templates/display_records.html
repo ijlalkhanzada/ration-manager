@@ -9,11 +9,9 @@
         body {
             background-color: #f8f9fa;
         }
-        /* Navbar Styling */
         .navbar {
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
-        /* Table Styling */
         .table-container {
             overflow-x: auto;
         }
@@ -38,44 +36,36 @@
         tr:hover {
             background-color: #f1f1f1;
         }
-        /* Badge Styling */
         .badge {
             font-size: 0.9rem;
         }
-        /* Actions Column Icons */
-        .action-icons {
-            font-size: 1.1rem;
-        }
-        /* Responsive Text */
         .responsive-text {
             font-size: 1rem;
         }
     </style>
 </head>
 <body>
+    <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
         <div class="container-fluid">
-            <!-- Total Members count -->
             <span class="navbar-text mr-3">Total Members: <strong>{{ total_recipients }}</strong></span>
-
             <!-- Filter Form -->
             <form method="GET" action="{{ url_for('display_records') }}" class="form-inline d-flex mr-3">
                 <input type="text" name="filter" class="form-control mr-2" placeholder="Filter by Name or City">
-                <button type="submit" class="btn btn-primary">Filter</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-filter"></i> Filter</button>
             </form>
-
             <!-- Button Group with Icons -->
             <div class="btn-group mr-3">
                 <a href="{{ url_for('upload_excel') }}" class="btn btn-primary"><i class="fas fa-upload"></i> Upload Excel</a>
                 <a href="{{ url_for('manual_input') }}" class="btn btn-info"><i class="fas fa-pencil-alt"></i> Manual Input</a>
             </div>
-
             <!-- Logout Button -->
             <a href="{{ url_for('logout') }}" class="btn btn-danger"><i class="fas fa-sign-out-alt"></i> Logout</a>
         </div>
     </nav>
 
-    <div class="container mt-5">
+    <!-- Page Content -->
+    <div class="container-fluid mt-5">
         <div class="table-container" style="margin-top: 80px;">
             <h2 class="text-center mb-4 responsive-text">Member Records</h2>
             <table class="table table-striped table-hover table-bordered">
@@ -110,15 +100,21 @@
                         <td>{{ record.contact_number }}</td>
                         <td>
                             {% if record.is_active %}
-                                <span class="badge badge-success">Active</span>
-                                <a href="{{ url_for('deactivate_member', record_id=record.id) }}" class="btn btn-warning btn-sm"><i class="fas fa-ban"></i> Deactivate</a>
+                                <span class="badge badge-success"><i class="fas fa-check-circle"></i> Active</span>
+                                <a href="{{ url_for('deactivate_member', record_id=record.id) }}" class="btn btn-warning btn-sm">
+                                    <i class="fas fa-ban"></i> Deactivate
+                                </a>
                             {% else %}
-                                <span class="badge badge-danger">Inactive</span>
-                                <a href="{{ url_for('activate_member', record_id=record.id) }}" class="btn btn-success btn-sm"><i class="fas fa-check"></i> Activate</a>
+                                <span class="badge badge-danger"><i class="fas fa-times-circle"></i> Inactive</span>
+                                <a href="{{ url_for('activate_member', record_id=record.id) }}" class="btn btn-success btn-sm">
+                                    <i class="fas fa-check"></i> Activate
+                                </a>
                             {% endif %}
                         </td>
                         <td>
-                            <a href="{{ url_for('update_record', record_id=record.id) }}" class="btn btn-primary btn-sm"><i class="fas fa-edit"></i> Update</a>
+                            <a href="{{ url_for('update_record', record_id=record.id) }}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-edit"></i> Update
+                            </a>
                         </td>
                     </tr>
                     {% endfor %}
@@ -127,7 +123,8 @@
         </div>
     </div>
 
-    <script src="https://kit.fontawesome.com/a076d05399.js"></script> <!-- For Font Awesome Icons -->
+    <!-- Scripts -->
+    <script src="https://kit.fontawesome.com/a076d05399.js"></script> <!-- Font Awesome Icons -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>

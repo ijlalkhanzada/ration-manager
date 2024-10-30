@@ -5,26 +5,68 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <title>Confirmation</title>
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 600px;
+        }
+        .card {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            border: none;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .card h2 {
+            font-size: 1.75rem;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+        .card-text {
+            font-size: 1rem;
+            color: #555;
+        }
+        .img-circle {
+            width: 200px;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 50%;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: -15px;
+            background-color: #fff;
+            padding: 5px;
+        }
+        .btn-primary {
+            width: 100%;
+            font-size: 1.1rem;
+            padding: 10px;
+        }
+    </style>
 </head>
 <body>
     <div class="container mt-5">
-        <h2>Member Details Submitted Successfully!</h2>
-        <div class="card mt-4">
+        <h2 class="text-center text-success">Member Details Submitted Successfully!</h2>
+        <div class="card mt-4 text-center p-4">
+            {% if member_image_url %}
+                <img src="{{ member_image_url }}" class="img-circle mx-auto d-block" alt="Member Image">
+            {% endif %}
             <div class="card-body">
                 <h5 class="card-title">{{ member.name }}</h5>
                 <p class="card-text"><strong>Father's Name:</strong> {{ member.father_name }}</p>
                 <p class="card-text"><strong>Address:</strong> {{ member.address }}</p>
                 <p class="card-text"><strong>Contact Number:</strong> {{ member.contact_number }}</p>
-                <p class="card-text"><strong>Reference:</strong> {{ reference }}</p>  <!-- Reference here -->
-
-                <!-- Agar images bhi submit ki gayi hain -->
-                {% if member_image_url %}
-                    <p><strong>Member Image:</strong></p>
-                    <img src="{{ member_image_url }}" class="img-fluid mb-3" alt="Member Image">
-                {% endif %}
+                <p class="card-text"><strong>Reference:</strong> {{ reference }}</p> <!-- Reference yahan dikhayenge -->
             </div>
         </div>
-        <a href="{{ url_for('display_records') }}" class="btn btn-primary mt-4">Back to Records</a>
+        <a href="{{ url_for('display_records') }}" class="btn btn-primary mt-4"><i class="fas fa-arrow-left"></i> Back to Records</a>
     </div>
+
+    <script src="https://kit.fontawesome.com/a076d05399.js"></script> <!-- Font Awesome ke liye -->
 </body>
 </html>
