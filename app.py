@@ -178,6 +178,13 @@ def upload_excel():
             
             # Required columns ki check
             required_columns = ['S/ No', 'Name', 'Father Name', 'Contact Number', 'Address']
+            missing_columns = [col for col in required_columns if col not in data.columns]
+
+            if missing_columns:
+                 missing_columns_list = ', '.join(missing_columns)
+                 flash(f"Excel file mein ye columns nahi hain: {missing_columns_list}. Meharbani Farma kar unhein theek karain aur dobara upload karain.")
+                 return redirect(url_for('upload_excel'))
+
             for col in required_columns:
                 if col not in data.columns:
                     flash(f"Excel file mein '{col}' column nahi hai.")
