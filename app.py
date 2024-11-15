@@ -72,6 +72,12 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///I:/ration-manager/ration_manager.db'  # Database URI specified
 
+
+import os
+
+basedir = os.path.abspath(os.path.dirname(__file__))
+app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(basedir, 'database.db')}"
+
 db = SQLAlchemy(app)  # Initialize SQLAlchemy with Flask app
 migrate = Migrate(app, db)  # مائیگریٹ انسٹینس
 
