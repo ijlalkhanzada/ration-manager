@@ -378,8 +378,17 @@ def delete_record(record_id):
         flash("Record not found")
     return redirect(url_for('display_records'))
 
+import os
+
 if __name__ == "__main__":
-    create_table()  # Ensure this function is called before running the app
-    app.run(debug=True)
+    # Create the database table before running the server
+    create_table()
+
+    # Use the provided PORT environment variable or fallback to 5000
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+
+    # Start the Flask application
+    app.run(host="0.0.0.0", port=port, debug=True)
+
+
+
