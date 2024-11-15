@@ -391,7 +391,7 @@ if __name__ == "__main__":
     create_table()
 
     # Use the provided PORT environment variable or fallback to 5000
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 8080))
 
     # Start the Flask application
     app.run(host="0.0.0.0", port=port, debug=True)
